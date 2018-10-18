@@ -1,0 +1,5 @@
+.dockerignore
+.editorconfig
+Dockerfile
+Makefile
+README.md

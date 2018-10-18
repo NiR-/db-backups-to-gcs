@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -o nounset
+set -o pipefail
+set -o errexit
+set -o errtrace
+[ -n "${TRACE:-}" ] && set -o xtrace
+
+backup_file=${PGDATABASE}-$(date +%d%m%Y%H%M%S).sql
+backup_path=/tmp/${backup_file}
+
+pg_dump --file=${backup_path} ${PGDATABASE}
+
+gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
+gsutil cp -a project-private ${backup_path} gs://${BUCKET_NAME}/${backup_file}
