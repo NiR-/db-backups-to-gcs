@@ -5,11 +5,17 @@ build: build-dump build-restore
 
 .PHONY: build-dump
 build-dump:
-	docker build --target dump -t akerouanton/postgres-gcs-backup:dump-$(VERSION) .
+	docker build \
+		--target dump \
+		--build-arg IMAGE_VERSION=$(VERSION) \
+		-t akerouanton/postgres-gcs-backup:dump-$(VERSION) .
 
 .PHONY: build-restore
 build-restore:
-	docker build --target restore -t akerouanton/postgres-gcs-backup:restore-$(VERSION) .
+	docker build \
+		--target restore \
+		--build-arg IMAGE_VERSION=$(VERSION) \
+		-t akerouanton/postgres-gcs-backup:restore-$(VERSION) .
 
 .PHONY: push
 push:

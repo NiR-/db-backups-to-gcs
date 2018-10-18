@@ -21,6 +21,9 @@ FROM base as dump
 
 COPY ./backup-to-gcs /usr/sbin/backup-to-gcs
 
+ARG IMAGE_VERSION
+ENV IMAGE_VERSION ${IMAGE_VERSION}
+
 CMD ["backup-to-gcs"]
 
 ############
@@ -28,5 +31,8 @@ CMD ["backup-to-gcs"]
 FROM base as restore
 
 COPY ./restore-from-gcs /usr/sbin/restore-from-gcs
+
+ARG IMAGE_VERSION
+ENV IMAGE_VERSION ${IMAGE_VERSION}
 
 ENTRYPOINT ["restore-from-gcs"]
