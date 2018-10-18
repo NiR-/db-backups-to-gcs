@@ -7,12 +7,12 @@ set -o errtrace
 [ -n "${TRACE:-}" ] && set -o xtrace
 
 printerr() {
-  echo "ERROR: ${@}" >&2
+    echo "ERROR: ${@}" >&2
 }
 
 if [ -z "${1:-}" ]; then
-  printerr "You have to provide the absolute path of the dump in the bucket."
-  exit 1
+    printerr "You have to provide the absolute path of the dump in the bucket."
+    exit 1
 fi
 
 backup_file="${1}"
