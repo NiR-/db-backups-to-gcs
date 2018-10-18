@@ -6,10 +6,10 @@ set -o errexit
 set -o errtrace
 [ -n "${TRACE:-}" ] && set -o xtrace
 
-backup_file=${PGDATABASE}-$(date +%d%m%Y%H%M%S).sql
+backup_file=${PGDATABASE}-$(date +%d%m%Y%H%M%S).sql.gz
 backup_path=/tmp/${backup_file}
 
-pg_dump --file=${backup_path} ${PGDATABASE}
+pg_dump ${PGDATABASE} | gzip > ${backup_path}
 
 gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
 gsutil -h "x-goog-meta-postgres-gcs-backup-version:${IMAGE_VERSION}" \

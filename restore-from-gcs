@@ -21,4 +21,4 @@ backup_path="/tmp/${backup_file}"
 gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
 gsutil cp gs://${BUCKET_NAME}/${backup_file} ${backup_path}
 
-psql < ${backup_path}
+gunzip ${backup_path} | psql
