@@ -22,3 +22,5 @@ gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FIL
 gsutil cp gs://${BUCKET_NAME}/${backup_file} ${backup_path}
 
 gunzip ${backup_path} | psql
+
+echo "Database restored."

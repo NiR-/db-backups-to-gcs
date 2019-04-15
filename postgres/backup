@@ -12,7 +12,9 @@ backup_path=/tmp/${backup_file}
 pg_dump ${PGDATABASE} | gzip > ${backup_path}
 
 gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
-gsutil -h "x-goog-meta-postgres-gcs-backup-version:${IMAGE_VERSION}" \
+gsutil -h "x-goog-meta-db-backups-to-gcs-version:postgres-${IMAGE_VERSION}" \
     cp \
     -a project-private \
     ${backup_path} gs://${BUCKET_NAME}/${backup_file}
+
+echo "Backup finished."

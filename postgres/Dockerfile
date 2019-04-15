@@ -19,20 +19,20 @@ RUN apk add --no-cache \
 
 FROM base as dump
 
-COPY ./backup-to-gcs /usr/sbin/backup-to-gcs
+COPY ./backup /usr/sbin/backup
 
 ARG IMAGE_VERSION
 ENV IMAGE_VERSION ${IMAGE_VERSION}
 
-CMD ["backup-to-gcs"]
+CMD ["backup"]
 
 ############
 
 FROM base as restore
 
-COPY ./restore-from-gcs /usr/sbin/restore-from-gcs
+COPY ./restore /usr/sbin/restore
 
 ARG IMAGE_VERSION
 ENV IMAGE_VERSION ${IMAGE_VERSION}
 
-ENTRYPOINT ["restore-from-gcs"]
+ENTRYPOINT ["restore"]
