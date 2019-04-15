@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -o nounset
+set -o pipefail
+set -o errexit
+set -o errtrace
+[ -n "${TRACE:-}" ] && set -o xtrace
+
+backup_file=${PGDATABASE}-$(date +%d%m%Y%H%M%S).sql.gz
+backup_path=/tmp/${backup_file}
+
+mysqldump ${@} | gzip > ${backup_path}
+
+gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
+gsutil -h "x-goog-meta-db-backups-to-gcs-version:mysql-${IMAGE_VERSION}" \
+    cp \
+    -a project-private \
+    ${backup_path} gs://${BUCKET_NAME}/${backup_file}
+
+echo "Backup finished."

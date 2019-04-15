@@ -1,6 +1,7 @@
 # db-backups-to-gcs
 
 * [postgresql](#postgresql)
+* [mysql](#mysql)
 * [Configure GCS](#configure-gcs)
 
 ## postgresql
@@ -60,6 +61,33 @@ docker run --rm -it \
   --volume ./gcloud-sa.json:/gcloud-sa.json:ro
   akerouanton/db-backups-to-gcs:postgres-restore-0.2
   my_db-20181018131600.tar
+```
+## mysql
+
+### `akerouanton/db-backups-to-gcs:mysql-dump-0.2`
+
+With Docker:
+
+```bash
+docker run --rm -it \
+  --env GCLOUD_SERVICE_ACCOUNT_KEY_FILE=/gcloud-sa.json
+  --env BUCKET_NAME=db-backup
+  --volume ./gcloud-sa.json:/gcloud-sa.json:ro
+  akerouanton/db-backups-to-gcs:mysql-dump-0.2
+  --single-transaction --quick -h mysql -u admin -p my_db
+```
+
+### `akerouanton/db-backups-to-gcs:mysql-restore-0.2`
+
+With Docker:
+
+```bash
+docker run --rm -it \
+  --env GCLOUD_SERVICE_ACCOUNT_KEY_FILE=/gcloud-sa.json
+  --env BUCKET_NAME=db-backup
+  --volume ./gcloud-sa.json:/gcloud-sa.json:ro
+  akerouanton/db-backups-to-gcs:mysql-restore-0.2
+  -h mysql -u admin -p my_db my_db-20181018131600.tar
 ```
 
 ## Configure GCS

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -o nounset
+set -o pipefail
+set -o errexit
+set -o errtrace
+[ -n "${TRACE:-}" ] && set -o xtrace
+
+printerr() {
+    echo "ERROR: ${@}" >&2
+}
+
+if [ -z "${@: -1}" ]; then
+    printerr "You have to provide the absolute path of the dump in the bucket."
+    exit 1
+fi
+
+backup_file="${@: -1}"
+backup_path="/tmp/${backup_file}"
+
+unset 'arr[${#arr[@]}-1]'
+
+gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
+gsutil cp gs://${BUCKET_NAME}/${backup_file} ${backup_path}
+
+gunzip ${backup_path} | mysql "${@}"
+
+echo "Database restored."
