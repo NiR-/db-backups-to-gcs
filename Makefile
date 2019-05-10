@@ -1,29 +1,26 @@
 VERSION ?= dev
+FLAVORS ?= postgres mysql
 
 .PHONY: build
 build: build-dump build-restore
 
 .PHONY: build-dump
 build-dump:
-	docker build \
-		--target dump \
-		--build-arg IMAGE_VERSION=$(VERSION) \
-		-t akerouanton/db-backups-to-gcs:postgres-dump-$(VERSION) postgres
-	docker build \
-		--target dump \
-		--build-arg IMAGE_VERSION=$(VERSION) \
-		-t akerouanton/db-backups-to-gcs:mysql-dump-$(VERSION) mysql
+	for flavor in $(FLAVORS); do \
+		docker build \
+			--target dump \
+			--build-arg IMAGE_VERSION=$(VERSION) \
+			-t akerouanton/db-backups-to-gcs:$${flavor}-dump-$(VERSION) $${flavor}; \
+	done
 
 .PHONY: build-restore
 build-restore:
-	docker build \
-		--target restore \
-		--build-arg IMAGE_VERSION=$(VERSION) \
-		-t akerouanton/db-backups-to-gcs:postgres-restore-$(VERSION) postgres
-	docker build \
-		--target restore \
-		--build-arg IMAGE_VERSION=$(VERSION) \
-		-t akerouanton/db-backups-to-gcs:mysql-restore-$(VERSION) mysql
+	for flavor in $(FLAVORS); do \
+		docker build \
+			--target dump \
+			--build-arg IMAGE_VERSION=$(VERSION) \
+			-t akerouanton/db-backups-to-gcs:$${flavor}-dump-$(VERSION) $${flavor}; \
+	done
 
 .PHONY: push
 push:
@@ -31,7 +28,7 @@ ifeq (dev,$(VERSION))
 	@echo "You have to specify a version to push."
 	@exit 1
 endif
-	docker push akerouanton/db-backups-to-gcs:postgres-dump-$(VERSION)
-	docker push akerouanton/db-backups-to-gcs:postgres-restore-$(VERSION)
-	docker push akerouanton/db-backups-to-gcs:mysql-dump-$(VERSION)
-	docker push akerouanton/db-backups-to-gcs:mysql-restore-$(VERSION)
+	for flavor in '$(FLAVORS)'; do \
+		docker push akerouanton/db-backups-to-gcs:$$(flavor)-dump-$(VERSION); \
+		docker push akerouanton/db-backups-to-gcs:$$(flavor)-restore-$(VERSION); \
+	done
