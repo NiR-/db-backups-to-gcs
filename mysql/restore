@@ -10,19 +10,71 @@ printerr() {
     echo "ERROR: ${@}" >&2
 }
 
-if [ -z "${@: -1}" ]; then
-    printerr "You have to provide the absolute path of the dump in the bucket."
+write_mycnf() {
+    if [ -n "${MYSQL_PWD_FILE:-}" ]; then
+        cat >~/.my.cnf <<EOF
+[client]
+password=$(cat ${MYSQL_PWD_FILE})
+EOF
+    fi
+}
+
+restore_db() {
+    local backup_file="${@: -1}"
+    local backup_path="/tmp/${backup_file}"
+
+    unset 'arr[${#arr[@]}-1]'
+
+    local mysql_options="${@}"
+
+    gsutil \
+        cp gs://${BUCKET_NAME}/${backup_file} - \
+    | gunzip \
+    | mysql \
+        --host "${MYSQL_HOST:-}" \
+        --user "${MYSQL_USER:-}" \
+        ${mysql_options} \
+        ${MYSQL_DATABASE}
+}
+
+check_env_vars() {
+    if [ -z "${GCLOUD_SERVICE_ACCOUNT_KEY_FILE:-}" ]; then
+        printerr "Please provide GCLOUD_SERVICE_ACCOUNT_KEY_FILE env var."
+        exit 1
+    fi
+
+    if ! [ -e "${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}" ]; then
+        printerr "Invalid GCLOUD_SERVICE_ACCOUNT_KEY_FILE env var: file does not exist."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_HOST:-}" ]; then
+        printerr "Please define MYSQL_HOST env var."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_USER:-}" ]; then
+        printerr "Please define MYSQL_USER env var."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_DATABASE:-}" ]; then
+        printerr "Please define MYSQL_DATABASE env var."
+    fi
+
+    if [ -n "${MYSQL_PASSWORD:-}" ]; then
+        export MYSQL_PWD="${MYSQL_PASSWORD}"
+    fi
+}
+
+if [ "${#}" -eq 0 ]; then
+    echo "Usage: ${@} [mysql-options] <backup-filename>" >&2
     exit 1
 fi
 
-backup_file="${@: -1}"
-backup_path="/tmp/${backup_file}"
-
-unset 'arr[${#arr[@]}-1]'
-
+check_env_vars
 gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
-gsutil cp gs://${BUCKET_NAME}/${backup_file} ${backup_path}
-
-gunzip ${backup_path} | mysql "${@}"
+write_mycnf
+restore_db "${@}"
 
 echo "Database restored."

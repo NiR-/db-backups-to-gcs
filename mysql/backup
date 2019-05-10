@@ -6,15 +6,67 @@ set -o errexit
 set -o errtrace
 [ -n "${TRACE:-}" ] && set -o xtrace
 
-backup_file=${PGDATABASE}-$(date +%d%m%Y%H%M%S).sql.gz
-backup_path=/tmp/${backup_file}
+printerr() {
+    echo "ERROR: ${@}" >&2
+}
 
-mysqldump ${@} | gzip > ${backup_path}
+write_mycnf() {
+    if [ -n "${MYSQL_PWD_FILE:-}" ]; then
+        cat >~/.my.cnf <<EOF
+[client]
+password=$(cat ${MYSQL_PWD_FILE})
+EOF
+    fi
+}
 
+backup_db() {
+    local mysql_options="${@}"
+    local backup_file=${MYSQL_DATABASE}-$(date +%d%m%Y%H%M%S).sql.gz
+
+    mysqldump \
+        --user "${MYSQL_USER}" \
+        --host "${MYSQL_HOST}" \
+        ${mysql_options} \
+        ${MYSQL_DATABASE} \
+    | gzip \
+    | gsutil \
+        -h "x-goog-meta-db-backups-to-gcs-version:mysql-${IMAGE_VERSION}" \
+        cp -a project-private - gs://${BUCKET_NAME}/${backup_file}
+}
+
+check_env_vars() {
+    if [ -z "${GCLOUD_SERVICE_ACCOUNT_KEY_FILE:-}" ]; then
+        printerr "Please provide GCLOUD_SERVICE_ACCOUNT_KEY_FILE env var."
+        exit 1
+    fi
+
+    if ! [ -e "${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}" ]; then
+        printerr "Invalid GCLOUD_SERVICE_ACCOUNT_KEY_FILE env var: file does not exist."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_HOST:-}" ]; then
+        printerr "Please define MYSQL_HOST env var."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_USER:-}" ]; then
+        printerr "Please define MYSQL_USER env var."
+        exit 1
+    fi
+
+    if [ -z "${MYSQL_DATABASE:-}" ]; then
+        printerr "Please define MYSQL_DATABASE env var."
+    fi
+
+    if [ -n "${MYSQL_PASSWORD:-}" ]; then
+        export MYSQL_PWD="${MYSQL_PASSWORD}"
+    fi
+}
+
+check_env_vars
 gcloud auth activate-service-account --key-file=${GCLOUD_SERVICE_ACCOUNT_KEY_FILE}
-gsutil -h "x-goog-meta-db-backups-to-gcs-version:mysql-${IMAGE_VERSION}" \
-    cp \
-    -a project-private \
-    ${backup_path} gs://${BUCKET_NAME}/${backup_file}
+write_mycnf
+backup_db "${@}"
 
 echo "Backup finished."
